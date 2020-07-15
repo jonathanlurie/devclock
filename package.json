@@ -1,7 +1,8 @@
 {
   "name": "devclock",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Dev time monitoring",
+  "homepage": "https://github.com/jonathanlurie/devclock",
   "main": "bin/index.js",
   "bin": {
     "devclock": "bin/index.js"
@@ -11,7 +12,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "chokidar": "^3.4.0",
     "meow": "^7.0.1",

@@ -14,9 +14,39 @@ const EDIT_TYPES = {
 }
 
 
-function appendLog(filepath, editType) {
-  fs.appendFileSync(devclockLogPath, `${shortid.generate()}\t${Date.now()}\t${getIso8601z()}\t${filepath}\t${editType}\n`)
+const cwd = process.cwd()
+const projectPkg = path.join(cwd, 'package.json')
+const gitHEAD = path.join(cwd, '.git', 'HEAD')
+let usesGit = false
+
+if (fs.existsSync(gitHEAD)) {
+  usesGit = true
 }
+
+
+function getGitInfo() {
+  if (!usesGit) {
+    return 'null'
+  }
+  
+  const HEADfile = fs.readFileSync(gitHEAD, 'utf8').trim()
+  const branchName = HEADfile.split('/').pop()
+  const commitHashFilePath = path.join(cwd, '.git', HEADfile.split(' ').pop())
+  const commitHash = fs.readFileSync(commitHashFilePath, 'utf8').trim()
+  return `${branchName}/${commitHash}`
+}
+
+
+function appendLog(filepath, editType) {
+  // take info from package.json
+  const pkg = JSON.parse(fs.readFileSync(projectPkg))
+
+  // take info from
+  let gitInfo = getGitInfo() 
+
+  fs.appendFileSync(devclockLogPath, `${shortid.generate()}\t${Date.now()}\t${getIso8601z()}\t${pkg.name}\t${pkg.version}\t${filepath}\t${editType}\t${gitInfo}\n`)
+}
+
 
 const cli = meow(`
     Usage
@@ -37,8 +67,7 @@ const cli = meow(`
   }
 })
 
-const cwd = process.cwd()
-const projectPkg = path.join(cwd, 'package.json')
+
 
 if (!fs.existsSync(projectPkg)) {
   console.log('Devclock must be launched from a NodeJS project that contains a package.json file.');
@@ -55,7 +84,7 @@ if (!fs.existsSync(devclockFolderPath)) {
 
 // init the devclog log
 if (!fs.existsSync(devclockLogPath)) {
-  fs.appendFileSync(devclockLogPath, '# edit_id\ttimestamp\tiso8601\tfilepath\tedit_type\n')
+  fs.appendFileSync(devclockLogPath, '# edit_id\ttimestamp\tiso8601\tpackage_name\tpackage_version\tfilepath\tedit_type\tgit_branch_and_last_commit_hash\n')
 }
 
 
@@ -81,3 +110,5 @@ watcher
   .on('add', filepath => appendLog(filepath, EDIT_TYPES.ADD))
   .on('change', filepath => appendLog(filepath, EDIT_TYPES.CHANGE))
   .on('unlink', filepath => appendLog(filepath, EDIT_TYPES.REMOVE)) 
+
+console.log('Watching', path.join(cwd, pattern), ' ...')
